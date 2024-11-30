@@ -2,7 +2,8 @@ const express = require('express');
 const pool = require('./db');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
+const host = process.env.HOST || 'localhost';
 
 app.get('/test-db', async (req, res) => {
   try {
@@ -13,6 +14,6 @@ app.get('/test-db', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Serverul rulează la http://localhost:${port}`);
+app.listen(port, host, () => {
+  console.log(`Serverul rulează la http://${host}:${port}`);
 });
