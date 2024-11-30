@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/Cezara24/ecommerce-backend#readme",
   "dependencies": {
+    "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "pg": "^8.13.1"
   }
