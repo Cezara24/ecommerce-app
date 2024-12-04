@@ -1,4 +1,7 @@
 .env
 
-node_modules/
-*.log
+backend/.env
+backend/node_modules/
+
+ui/node_modules/
+ui/build/
