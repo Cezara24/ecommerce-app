@@ -1,6 +1,7 @@
 require('dotenv').config();
 require('./models/associations');
 const express = require('express');
+const cors = require('cors');
 const sequelize = require('./db');
 
 const userRoutes = require('./routes/users');
@@ -9,6 +10,12 @@ const orderRoutes = require('./routes/orders');
 const categoryRoutes = require('./routes/categories');
 
 const app = express();
+
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
 
 app.use(express.json());
 
