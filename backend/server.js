@@ -3,6 +3,8 @@ require('./models/associations');
 const express = require('express');
 const cors = require('cors');
 const sequelize = require('./db');
+const fs = require('fs');
+const https = require('https');
 
 const userRoutes = require('./routes/users');
 const productRoutes = require('./routes/products');
@@ -35,9 +37,20 @@ const port = process.env.PORT || 3000;
     await sequelize.sync({ alter: true });
     console.log('Modelele sunt sincronizate cu baza de date.');
 
-    app.listen(port, host, () => {
-      console.log(`Serverul rulează pe http://${host}:${port}`);
-    });
+    if (process.env.NODE_ENV === 'production') {
+      const privateKey = fs.readFileSync('/etc/letsencrypt/live/app.commercecove.xyz/privkey.pem', 'utf8');
+      const certificate = fs.readFileSync('/etc/letsencrypt/live/app.commercecove.xyz/cert.pem', 'utf8');
+      const ca = fs.readFileSync('/etc/letsencrypt/live/app.commercecove.xyz/chain.pem', 'utf8');
+      const credentials = { key: privateKey, cert: certificate, ca: ca };
+
+      https.createServer(credentials, app).listen(port, host, () => {
+        console.log(`Serverul rulează securizat la https://${host}:${port}`);
+      });
+    } else {
+      app.listen(port, host, () => {
+        console.log(`Serverul rulează pe http://${host}:${port}`);
+      });
+    }
   } catch (error) {
     console.error('Eroare la conectarea la baza de date sau pornirea serverului:', error);
   }
