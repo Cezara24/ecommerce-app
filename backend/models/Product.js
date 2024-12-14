@@ -1,26 +1,13 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../db');
-
-const Product = sequelize.define('Product', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  price: {
-    type: DataTypes.FLOAT,
-    allowNull: false,
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-}, {
-  timestamps: true,
-});
-
-module.exports = Product;
+'use strict';
+module.exports = (sequelize, DataTypes) => {
+  return sequelize.define('Product', {
+    name: { type: DataTypes.STRING, allowNull: false },
+    price: { type: DataTypes.DECIMAL(10, 2), allowNull: false, validate: { min: 0 } },
+    description: DataTypes.TEXT,
+    stock: { type: DataTypes.INTEGER, defaultValue: 0, validate: { min: 0 } },
+    sku: { type: DataTypes.STRING, allowNull: false, unique: true },
+    isFeatured: { type: DataTypes.BOOLEAN, defaultValue: false },
+    imageUrl: DataTypes.STRING,
+    categoryId: DataTypes.INTEGER,
+  }, {});
+};

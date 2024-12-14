@@ -1,7 +1,7 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('Category', {
+  return sequelize.define('Attribute', {
     name: { type: DataTypes.STRING, allowNull: false },
-    description: DataTypes.TEXT,
+    categoryId: { type: DataTypes.INTEGER, allowNull: false },
   }, {});
 };

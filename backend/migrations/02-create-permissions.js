@@ -2,16 +2,17 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Categories', {
+    await queryInterface.createTable('Permissions', {
       id: {
         type: Sequelize.INTEGER,
-        autoIncrement: true,
         primaryKey: true,
+        autoIncrement: true,
+        allowNull: false,
       },
       name: {
-        type: Sequelize.STRING,
-        allowNull: false,
+        type: Sequelize.STRING(50),
         unique: true,
+        allowNull: false,
       },
       description: {
         type: Sequelize.TEXT,
@@ -19,15 +20,18 @@ module.exports = {
       },
       createdAt: {
         type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
         allowNull: false,
       },
       updatedAt: {
         type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
         allowNull: false,
       },
     });
   },
-  async down(queryInterface) {
-    await queryInterface.dropTable('Categories');
+
+  async down(queryInterface, Sequelize) {
+    await queryInterface.dropTable('Permissions');
   },
 };

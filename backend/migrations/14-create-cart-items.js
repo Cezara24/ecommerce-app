@@ -2,16 +2,17 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('OrderItems', {
+    await queryInterface.createTable('CartItems', {
       id: {
-        type: Sequelize.INTEGER,
+        allowNull: false,
         autoIncrement: true,
         primaryKey: true,
+        type: Sequelize.INTEGER,
       },
-      orderId: {
+      cartId: {
         type: Sequelize.INTEGER,
         references: {
-          model: 'Orders',
+          model: 'Cart',
           key: 'id',
         },
         onDelete: 'CASCADE',
@@ -29,22 +30,24 @@ module.exports = {
       quantity: {
         type: Sequelize.INTEGER,
         allowNull: false,
-      },
-      price: {
-        type: Sequelize.FLOAT,
-        allowNull: false,
+        validate: {
+          min: 1,
+        },
       },
       createdAt: {
-        type: Sequelize.DATE,
         allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
       updatedAt: {
-        type: Sequelize.DATE,
         allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
     });
   },
-  async down(queryInterface) {
-    await queryInterface.dropTable('OrderItems');
+
+  async down(queryInterface, Sequelize) {
+    await queryInterface.dropTable('CartItems');
   },
 };

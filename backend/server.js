@@ -3,27 +3,31 @@ require('./models/associations');
 const express = require('express');
 const cors = require('cors');
 const sequelize = require('./db');
+const errorHandler = require('./middlewares/errorHandler');
+const loadRoutes = require('./utils/loadRoutes');
+const passport = require('./config/passport');
 
-const userRoutes = require('./routes/users');
-const productRoutes = require('./routes/products');
-const orderRoutes = require('./routes/orders');
-const categoryRoutes = require('./routes/categories');
-
+// Inițializează aplicația
 const app = express();
 
+// Middleware pentru Passport.js
+app.use(passport.initialize());
+
+// Middleware
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
+  credentials: true,
 }));
-
 app.use(express.json());
 
-app.use('/users', userRoutes);
-app.use('/products', productRoutes);
-app.use('/orders', orderRoutes);
-app.use('/categories', categoryRoutes);
+// Încarcă toate rutele
+loadRoutes(app, './routes');
 
+// Middleware pentru tratarea erorilor
+app.use(errorHandler);
+
+// Configurații server
 const host = process.env.HOST || 'localhost';
 const port = process.env.PORT || 3000;
 
