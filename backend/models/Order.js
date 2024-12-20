@@ -1,19 +1,22 @@
 'use strict';
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('Order', {
-    userId: { type: DataTypes.INTEGER, allowNull: false },
-    status: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: { isIn: [['pending', 'shipped', 'completed', 'cancelled']] },
+  class Order extends Model {
+    static associate(models) {
+      Order.belongsTo(models.User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+      Order.belongsTo(models.Coupon, { foreignKey: 'couponId', onDelete: 'SET NULL' });
+      Order.hasMany(models.OrderItem, { foreignKey: 'orderId', onDelete: 'CASCADE' });
+    }
+  }
+
+  Order.init(
+    {
+      status: { type: DataTypes.STRING, allowNull: false },
+      totalAmount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     },
-    totalAmount: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-      validate: { min: 0 },
-    },
-    addressId: { type: DataTypes.INTEGER, allowNull: false },
-    paymentMethod: DataTypes.STRING,
-    couponId: DataTypes.INTEGER,
-  }, {});
+    { sequelize, modelName: 'Order', tableName: 'Orders' }
+  );
+
+  return Order;
 };

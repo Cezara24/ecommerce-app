@@ -1,16 +1,20 @@
 const express = require('express');
-const { Order, OrderItem, Product, UserAddress, Coupon, PaymentTransaction } = require('../models');
-const authMiddleware = require('../middlewares/auth');
+const sequelize = require('../db'); // Conexiunea la baza de date
+const { Sequelize } = require('sequelize');
+const Order = require('../models/Order')(sequelize, Sequelize.DataTypes);
+const OrderItem = require('../models/OrderItem')(sequelize, Sequelize.DataTypes);
+const PaymentTransaction = require('../models/PaymentTransaction')(sequelize, Sequelize.DataTypes);
+const Product = require('../models/Product')(sequelize, Sequelize.DataTypes);
+const { authMiddleware } = require('../middlewares/auth'); // Asigură-te că sunt importate corect
 const roleMiddleware = require('../middlewares/role');
 const permissionMiddleware = require('../middlewares/permission');
 
 const router = express.Router();
 
-// Get all orders
+// Obține toate comenzile
 router.get(
   '/',
-  authMiddleware,
-  permissionMiddleware('view_orders'),
+  [authMiddleware, roleMiddleware(['admin', 'merchant', 'customer']), permissionMiddleware('view_orders')],
   async (req, res) => {
     try {
       const orders = await Order.findAll({
@@ -18,35 +22,34 @@ router.get(
       });
       res.json(orders);
     } catch (error) {
-      res.status(500).json({ error: 'Error fetching orders', details: error.message });
+      res.status(500).json({ error: 'Eroare la obținerea comenzilor.', details: error.message });
     }
   }
 );
 
-// Get order by ID
+// Obține o comandă după ID
 router.get(
   '/:id',
-  authMiddleware,
-  permissionMiddleware('view_order'),
+  [authMiddleware, roleMiddleware(['admin', 'merchant', 'customer']), permissionMiddleware('view_order')],
   async (req, res) => {
     try {
       const order = await Order.findByPk(req.params.id, {
         include: [OrderItem, PaymentTransaction],
       });
-      if (!order) return res.status(404).json({ error: 'Order not found' });
-
+      if (!order) {
+        return res.status(404).json({ error: 'Comanda nu a fost găsită.' });
+      }
       res.json(order);
     } catch (error) {
-      res.status(500).json({ error: 'Error fetching order', details: error.message });
+      res.status(500).json({ error: 'Eroare la obținerea comenzii.', details: error.message });
     }
   }
 );
 
-// Create a new order
+// Creează o comandă nouă
 router.post(
   '/',
-  authMiddleware,
-  permissionMiddleware('create_order'),
+  [authMiddleware, roleMiddleware(['customer']), permissionMiddleware('create_order')],
   async (req, res) => {
     const { userId, status, totalAmount, addressId, paymentMethod, couponId, items } = req.body;
 
@@ -69,75 +72,80 @@ router.post(
 
       await OrderItem.bulkCreate(orderItems);
 
-      res.status(201).json({ message: 'Order created successfully!', order });
+      res.status(201).json({ message: 'Comanda a fost creată cu succes!', order });
     } catch (error) {
-      res.status(500).json({ error: 'Error creating order', details: error.message });
+      res.status(500).json({ error: 'Eroare la crearea comenzii.', details: error.message });
     }
   }
 );
 
-// Update an order
+// Actualizează o comandă
 router.put(
   '/:id',
-  authMiddleware,
-  permissionMiddleware('update_order'),
+  [authMiddleware, roleMiddleware(['admin']), permissionMiddleware('update_order')],
   async (req, res) => {
     try {
       const order = await Order.findByPk(req.params.id);
-      if (!order) return res.status(404).json({ error: 'Order not found' });
+      if (!order) {
+        return res.status(404).json({ error: 'Comanda nu a fost găsită.' });
+      }
 
       await order.update(req.body);
-      res.json({ message: 'Order updated successfully', order });
+      res.json({ message: 'Comanda a fost actualizată cu succes.', order });
     } catch (error) {
-      res.status(500).json({ error: 'Error updating order', details: error.message });
+      res.status(500).json({ error: 'Eroare la actualizarea comenzii.', details: error.message });
     }
   }
 );
 
-// Delete an order
+// Șterge o comandă
 router.delete(
   '/:id',
-  authMiddleware,
-  permissionMiddleware('delete_order'),
+  [authMiddleware, roleMiddleware(['admin']), permissionMiddleware('delete_order')],
   async (req, res) => {
     try {
       const order = await Order.findByPk(req.params.id);
-      if (!order) return res.status(404).json({ error: 'Order not found' });
+      if (!order) {
+        return res.status(404).json({ error: 'Comanda nu a fost găsită.' });
+      }
 
       await order.destroy();
-      res.json({ message: 'Order deleted successfully' });
+      res.json({ message: 'Comanda a fost ștearsă cu succes.' });
     } catch (error) {
-      res.status(500).json({ error: 'Error deleting order', details: error.message });
+      res.status(500).json({ error: 'Eroare la ștergerea comenzii.', details: error.message });
     }
   }
 );
 
-// Get items for an order
+// Obține produsele dintr-o comandă
 router.get(
   '/:id/items',
-  authMiddleware,
-  permissionMiddleware('view_orders'),
+  [authMiddleware, roleMiddleware(['admin', 'merchant', 'customer']), permissionMiddleware('view_orders')],
   async (req, res) => {
     try {
-      const items = await OrderItem.findAll({ where: { orderId: req.params.id } });
+      const items = await OrderItem.findAll({
+        where: { orderId: req.params.id },
+        include: [Product],
+      });
       res.json(items);
     } catch (error) {
-      res.status(500).json({ error: 'Error fetching order items', details: error.message });
+      res.status(500).json({ error: 'Eroare la obținerea produselor comenzii.', details: error.message });
     }
   }
 );
 
-// Add items to an order
+// Adaugă produse într-o comandă
 router.post(
   '/:id/items',
-  authMiddleware,
-  permissionMiddleware('manage_orders'),
+  [authMiddleware, roleMiddleware(['admin']), permissionMiddleware('manage_orders')],
   async (req, res) => {
     const { items } = req.body;
 
     try {
       const order = await Order.findByPk(req.params.id);
-      if (!order) return res.status(404).json({ error: 'Order not found' });
+      if (!order) {
+        return res.status(404).json({ error: 'Comanda nu a fost găsită.' });
+      }
 
       const orderItems = items.map((item) => ({
         orderId: req.params.id,
@@ -147,44 +155,44 @@ router.post(
       }));
 
       await OrderItem.bulkCreate(orderItems);
-      res.json({ message: 'Items added to order successfully' });
+      res.json({ message: 'Produsele au fost adăugate cu succes în comandă.' });
     } catch (error) {
-      res.status(500).json({ error: 'Error adding items to order', details: error.message });
+      res.status(500).json({ error: 'Eroare la adăugarea produselor în comandă.', details: error.message });
     }
   }
 );
 
-// Delete an item from an order
+// Șterge un produs dintr-o comandă
 router.delete(
   '/:id/items/:itemId',
-  authMiddleware,
-  permissionMiddleware('manage_orders'),
+  [authMiddleware, roleMiddleware(['admin']), permissionMiddleware('manage_orders')],
   async (req, res) => {
     try {
       const item = await OrderItem.findByPk(req.params.itemId);
       if (!item || item.orderId !== parseInt(req.params.id, 10)) {
-        return res.status(404).json({ error: 'Item not found in the order' });
+        return res.status(404).json({ error: 'Produsul nu a fost găsit în această comandă.' });
       }
 
       await item.destroy();
-      res.json({ message: 'Item removed from order' });
+      res.json({ message: 'Produsul a fost șters din comandă.' });
     } catch (error) {
-      res.status(500).json({ error: 'Error removing item from order', details: error.message });
+      res.status(500).json({ error: 'Eroare la ștergerea produsului din comandă.', details: error.message });
     }
   }
 );
 
-// Get payment transactions for an order
+// Obține tranzacțiile unei comenzi
 router.get(
   '/:id/transactions',
-  authMiddleware,
-  permissionMiddleware('view_transactions'),
+  [authMiddleware, roleMiddleware(['admin', 'customer']), permissionMiddleware('view_transactions')],
   async (req, res) => {
     try {
-      const transactions = await PaymentTransaction.findAll({ where: { orderId: req.params.id } });
+      const transactions = await PaymentTransaction.findAll({
+        where: { orderId: req.params.id },
+      });
       res.json(transactions);
     } catch (error) {
-      res.status(500).json({ error: 'Error fetching transactions', details: error.message });
+      res.status(500).json({ error: 'Eroare la obținerea tranzacțiilor comenzii.', details: error.message });
     }
   }
 );

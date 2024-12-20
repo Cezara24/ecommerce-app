@@ -3,17 +3,28 @@ const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
   class Role extends Model {
-    // Metode adiționale pot fi adăugate aici dacă este nevoie
+    static associate(models) {
+      Role.hasMany(models.User, { foreignKey: 'roleId', onDelete: 'SET NULL' });
+      Role.belongsToMany(models.Permission, {
+        through: models.RolePermission,
+        foreignKey: 'roleId',
+      });
+    }
   }
 
   Role.init(
     {
-      name: { type: DataTypes.STRING, allowNull: false, unique: true },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+      },
       description: DataTypes.TEXT,
     },
     {
       sequelize,
-      modelName: 'Role', // Numele modelului trebuie să fie consistent
+      modelName: 'Role',
+      tableName: 'Roles',
     }
   );
 

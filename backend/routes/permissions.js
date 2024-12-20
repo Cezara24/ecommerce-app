@@ -1,60 +1,82 @@
 const express = require('express');
-const { Permission } = require('../models');
-const authMiddleware = require('../middlewares/auth');
+const sequelize = require('../db'); // Conexiunea la baza de date
+const { Sequelize } = require('sequelize');
+const Permission = require('../models/Permission')(sequelize, Sequelize.DataTypes);
+const RolePermission = require('../models/RolePermission')(sequelize, Sequelize.DataTypes);
+const { authMiddleware } = require('../middlewares/auth'); // Import corect pentru funcții
 const roleMiddleware = require('../middlewares/role');
-const permissionMiddleware = require('../middlewares/permission');
 
 const router = express.Router();
 
 // Obține toate permisiunile (doar admin)
-router.get('/', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
-  try {
-    const permissions = await Permission.findAll();
-    res.json(permissions);
-  } catch (error) {
-    res.status(500).json({ error: 'Eroare la obținerea permisiunilor', details: error.message });
+router.get(
+  '/',
+  authMiddleware,
+  roleMiddleware(['admin']),
+  async (req, res) => {
+    try {
+      const permissions = await Permission.findAll();
+      res.json(permissions);
+    } catch (error) {
+      res.status(500).json({ error: 'Eroare la obținerea permisiunilor', details: error.message });
+    }
   }
-});
+);
 
 // Creează o nouă permisiune (doar admin)
-router.post('/', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
-  const { name, description } = req.body;
-  try {
-    const permission = await Permission.create({ name, description });
-    res.status(201).json({ message: 'Permisiune creată cu succes', permission });
-  } catch (error) {
-    res.status(500).json({ error: 'Eroare la crearea permisiunii', details: error.message });
+router.post(
+  '/',
+  authMiddleware,
+  roleMiddleware(['admin']),
+  async (req, res) => {
+    const { name, description } = req.body;
+    try {
+      const permission = await Permission.create({ name, description });
+      res.status(201).json({ message: 'Permisiune creată cu succes', permission });
+    } catch (error) {
+      res.status(500).json({ error: 'Eroare la crearea permisiunii', details: error.message });
+    }
   }
-});
+);
 
 // Actualizează o permisiune existentă (doar admin)
-router.put('/:id', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
-  const { name, description } = req.body;
-  try {
-    const permission = await Permission.findByPk(req.params.id);
-    if (!permission) {
-      return res.status(404).json({ error: 'Permisiune inexistentă' });
+router.put(
+  '/:id',
+  authMiddleware,
+  roleMiddleware(['admin']),
+  async (req, res) => {
+    const { name, description } = req.body;
+    try {
+      const permission = await Permission.findByPk(req.params.id);
+      if (!permission) {
+        return res.status(404).json({ error: 'Permisiune inexistentă' });
+      }
+      await permission.update({ name, description });
+      res.json({ message: 'Permisiune actualizată cu succes', permission });
+    } catch (error) {
+      res.status(500).json({ error: 'Eroare la actualizarea permisiunii', details: error.message });
     }
-    await permission.update({ name, description });
-    res.json({ message: 'Permisiune actualizată cu succes', permission });
-  } catch (error) {
-    res.status(500).json({ error: 'Eroare la actualizarea permisiunii', details: error.message });
   }
-});
+);
 
 // Șterge o permisiune (doar admin)
-router.delete('/:id', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
-  try {
-    const permission = await Permission.findByPk(req.params.id);
-    if (!permission) {
-      return res.status(404).json({ error: 'Permisiune inexistentă' });
+router.delete(
+  '/:id',
+  authMiddleware,
+  roleMiddleware(['admin']),
+  async (req, res) => {
+    try {
+      const permission = await Permission.findByPk(req.params.id);
+      if (!permission) {
+        return res.status(404).json({ error: 'Permisiune inexistentă' });
+      }
+      await permission.destroy();
+      res.json({ message: 'Permisiune ștearsă cu succes' });
+    } catch (error) {
+      res.status(500).json({ error: 'Eroare la ștergerea permisiunii', details: error.message });
     }
-    await permission.destroy();
-    res.json({ message: 'Permisiune ștearsă cu succes' });
-  } catch (error) {
-    res.status(500).json({ error: 'Eroare la ștergerea permisiunii', details: error.message });
   }
-});
+);
 
 // Atribuie o permisiune unui rol (doar admin)
 router.post(

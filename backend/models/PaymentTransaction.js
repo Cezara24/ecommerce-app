@@ -1,13 +1,21 @@
 'use strict';
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('PaymentTransaction', {
-    orderId: { type: DataTypes.INTEGER, allowNull: false },
-    paymentStatus: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: { isIn: [['pending', 'completed', 'failed']] },
+  class PaymentTransaction extends Model {
+    static associate(models) {
+      PaymentTransaction.belongsTo(models.Order, { foreignKey: 'orderId', onDelete: 'CASCADE' });
+    }
+  }
+
+  PaymentTransaction.init(
+    {
+      paymentStatus: { type: DataTypes.STRING, allowNull: false },
+      paymentGateway: DataTypes.STRING,
+      transactionId: DataTypes.STRING,
     },
-    paymentGateway: DataTypes.STRING,
-    transactionId: DataTypes.STRING,
-  }, {});
+    { sequelize, modelName: 'PaymentTransaction', tableName: 'PaymentTransactions' }
+  );
+
+  return PaymentTransaction;
 };

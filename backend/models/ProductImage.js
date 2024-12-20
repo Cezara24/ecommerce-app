@@ -1,8 +1,20 @@
 'use strict';
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('ProductImage', {
-    productId: { type: DataTypes.INTEGER, allowNull: false },
-    imageUrl: { type: DataTypes.STRING, allowNull: false },
-    isPrimary: { type: DataTypes.BOOLEAN, defaultValue: false },
-  }, {});
+  class ProductImage extends Model {
+    static associate(models) {
+      ProductImage.belongsTo(models.Product, { foreignKey: 'productId', onDelete: 'CASCADE' });
+    }
+  }
+
+  ProductImage.init(
+    {
+      imageUrl: { type: DataTypes.STRING, allowNull: false },
+      isPrimary: { type: DataTypes.BOOLEAN, defaultValue: false },
+    },
+    { sequelize, modelName: 'ProductImage', tableName: 'ProductImages' }
+  );
+
+  return ProductImage;
 };

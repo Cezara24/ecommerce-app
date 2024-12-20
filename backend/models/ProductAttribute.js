@@ -1,8 +1,20 @@
 'use strict';
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('ProductAttribute', {
-    productId: { type: DataTypes.INTEGER, allowNull: false },
-    attributeId: { type: DataTypes.INTEGER, allowNull: false },
-    value: { type: DataTypes.STRING, allowNull: false },
-  }, {});
+  class ProductAttribute extends Model {
+    static associate(models) {
+      ProductAttribute.belongsTo(models.Product, { foreignKey: 'productId', onDelete: 'CASCADE' });
+      ProductAttribute.belongsTo(models.Attribute, { foreignKey: 'attributeId', onDelete: 'CASCADE' });
+    }
+  }
+
+  ProductAttribute.init(
+    {
+      value: { type: DataTypes.STRING, allowNull: false },
+    },
+    { sequelize, modelName: 'ProductAttribute', tableName: 'ProductAttributes' }
+  );
+
+  return ProductAttribute;
 };

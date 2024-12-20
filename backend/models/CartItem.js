@@ -1,8 +1,20 @@
 'use strict';
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('CartItem', {
-    cartId: { type: DataTypes.INTEGER, allowNull: false },
-    productId: { type: DataTypes.INTEGER, allowNull: false },
-    quantity: { type: DataTypes.INTEGER, allowNull: false, validate: { min: 1 } },
-  }, {});
+  class CartItem extends Model {
+    static associate(models) {
+      CartItem.belongsTo(models.Cart, { foreignKey: 'cartId', onDelete: 'CASCADE' });
+      CartItem.belongsTo(models.Product, { foreignKey: 'productId', onDelete: 'CASCADE' });
+    }
+  }
+
+  CartItem.init(
+    {
+      quantity: { type: DataTypes.INTEGER, allowNull: false },
+    },
+    { sequelize, modelName: 'CartItem', tableName: 'CartItems' }
+  );
+
+  return CartItem;
 };

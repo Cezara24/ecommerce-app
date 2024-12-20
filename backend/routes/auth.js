@@ -2,13 +2,20 @@ const express = require('express');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const { User, Role, Permission } = require('../models');
-const authMiddleware = require('../middlewares/auth');
-const roleMiddleware = require('../middlewares/role');
+const sequelize = require('../db');
+const { Sequelize } = require('sequelize');
+
+// Importă modelele
+const User = require('../models/User')(sequelize, Sequelize.DataTypes);
+const Role = require('../models/Role')(sequelize, Sequelize.DataTypes);
+const Permission = require('../models/Permission')(sequelize, Sequelize.DataTypes);
+
+// Middleware-uri
+const { authMiddleware, roleMiddleware, permissionMiddleware } = require('../middlewares/auth');
 
 const router = express.Router();
 
-// Register a new user with the role 'customer' by default
+// Înregistrare utilizator nou (rol implicit: 'customer')
 router.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
   try {
@@ -17,23 +24,23 @@ router.post('/register', async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      roleId: 2, // Assuming 'customer' has roleId 2
+      roleId: 2, // Presupunând că 'customer' are roleId 2
     });
-    res.status(201).json({ message: 'User registered successfully!' });
+    res.status(201).json({ message: 'Utilizator înregistrat cu succes!' });
   } catch (error) {
-    res.status(500).json({ error: 'Registration failed', details: error.message });
+    res.status(500).json({ error: 'Eroare la înregistrare', details: error.message });
   }
 });
 
-// Login an existing user
+// Autentificare utilizator
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ where: { email }, include: Role });
-    if (!user) return res.status(404).json({ error: 'Invalid email or password' });
+    if (!user) return res.status(404).json({ error: 'Email sau parolă incorecte' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ error: 'Invalid email or password' });
+    if (!isMatch) return res.status(401).json({ error: 'Email sau parolă incorecte' });
 
     const token = jwt.sign(
       { id: user.id, role: user.Role.name },
@@ -42,68 +49,40 @@ router.post('/login', async (req, res) => {
     );
     res.json({ token });
   } catch (error) {
-    res.status(500).json({ error: 'Authentication failed', details: error.message });
+    res.status(500).json({ error: 'Eroare la autentificare', details: error.message });
   }
 });
 
-// Google login: Redirect to Google for authentication
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+// Logout utilizator
+router.post('/logout', authMiddleware, (req, res) => {
+  res.json({ message: 'Delogat cu succes' });
+});
 
-// Google callback: Handle Google authentication response
-router.get(
-  '/google/callback',
-  passport.authenticate('google', { session: false }),
+// Asignare rol utilizator (doar admin)
+router.post(
+  '/assign-role/:id',
+  authMiddleware,
+  roleMiddleware(['admin']),
+  permissionMiddleware('assign_role'),
   async (req, res) => {
+    const { roleId } = req.body;
     try {
-      let user = await User.findOne({ where: { email: req.user.emails[0].value } });
+      const user = await User.findByPk(req.params.id);
+      if (!user) return res.status(404).json({ error: 'Utilizator inexistent' });
 
-      if (!user) {
-        user = await User.create({
-          name: req.user.displayName,
-          email: req.user.emails[0].value,
-          roleId: 2, // Default to 'customer'
-          isVerified: true,
-          profilePicture: req.user.photos[0]?.value,
-        });
-      }
-
-      const token = jwt.sign(
-        { id: user.id, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: '1d' }
-      );
-      res.redirect(`${process.env.FRONTEND_URL}/login-success?token=${token}`);
+      await user.update({ roleId });
+      res.json({ message: 'Rol asignat cu succes!' });
     } catch (error) {
-      res.status(500).json({ error: 'Google authentication failed', details: error.message });
+      res.status(500).json({ error: 'Eroare la asignarea rolului', details: error.message });
     }
   }
 );
 
-// Logout user
-router.post('/logout', authMiddleware, (req, res) => {
-  // For stateless JWT, "logout" can simply be managed client-side by removing the token
-  res.json({ message: 'Logged out successfully' });
-});
-
-// Assign a role to a user (Admin only)
-router.put('/assign-role/:id', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
-  const { roleId } = req.body;
-  try {
-    const user = await User.findByPk(req.params.id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    await user.update({ roleId });
-    res.json({ message: `Role assigned to user successfully` });
-  } catch (error) {
-    res.status(500).json({ error: 'Error assigning role', details: error.message });
-  }
-});
-
-// Get current user details
+// Obține detalii utilizator curent
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id, { include: [Role, Permission] });
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user) return res.status(404).json({ error: 'Utilizator inexistent' });
 
     res.json({
       id: user.id,
@@ -113,7 +92,7 @@ router.get('/me', authMiddleware, async (req, res) => {
       permissions: user.Role.Permissions.map((perm) => perm.name),
     });
   } catch (error) {
-    res.status(500).json({ error: 'Error retrieving user details', details: error.message });
+    res.status(500).json({ error: 'Eroare la obținerea detaliilor utilizatorului', details: error.message });
   }
 });
 

@@ -1,29 +1,35 @@
 const express = require('express');
-const { Notification } = require('../models');
-const authMiddleware = require('../middlewares/auth');
+const sequelize = require('../db'); // Conexiunea la baza de date
+const { Sequelize } = require('sequelize');
+const Notification = require('../models/Notification')(sequelize, Sequelize.DataTypes); // Modelul Notification
+const { authMiddleware } = require('../middlewares/auth');
 const roleMiddleware = require('../middlewares/role');
 const permissionMiddleware = require('../middlewares/permission');
 
 const router = express.Router();
 
-// GET all notifications for a user
-router.get('/users/:id/notifications', authMiddleware, async (req, res) => {
-  const { id } = req.params;
+// Obține toate notificările unui utilizator
+router.get(
+  '/users/:id/notifications',
+  authMiddleware,
+  async (req, res) => {
+    const { id } = req.params;
 
-  // Check if the user is authorized to view notifications
-  if (req.user.id !== parseInt(id, 10) && req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Acces interzis.' });
+    // Verifică dacă utilizatorul este autorizat să vizualizeze notificările
+    if (req.user.id !== parseInt(id, 10) && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Acces interzis.' });
+    }
+
+    try {
+      const notifications = await Notification.findAll({ where: { userId: id } });
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ error: 'Eroare la obținerea notificărilor.', details: error.message });
+    }
   }
+);
 
-  try {
-    const notifications = await Notification.findAll({ where: { userId: id } });
-    res.json(notifications);
-  } catch (error) {
-    res.status(500).json({ error: 'Eroare la obținerea notificărilor.', details: error.message });
-  }
-});
-
-// CREATE a notification for a user
+// Creează o notificare pentru un utilizator
 router.post(
   '/users/:id/notifications',
   authMiddleware,
@@ -46,13 +52,14 @@ router.post(
   }
 );
 
-// UPDATE a notification (mark as read)
+// Actualizează o notificare (marchează ca citită)
 router.put(
   '/users/:id/notifications/:notificationId',
   authMiddleware,
   async (req, res) => {
     const { id, notificationId } = req.params;
 
+    // Verifică dacă utilizatorul este autorizat să actualizeze notificarea
     if (req.user.id !== parseInt(id, 10) && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Acces interzis.' });
     }
@@ -71,7 +78,7 @@ router.put(
   }
 );
 
-// DELETE a notification
+// Șterge o notificare
 router.delete(
   '/users/:id/notifications/:notificationId',
   authMiddleware,

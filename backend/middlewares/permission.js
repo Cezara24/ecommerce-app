@@ -3,7 +3,7 @@ module.exports = (requiredPermission) => (req, res, next) => {
     return res
       .status(403)
       .json({
-        error: `Acces interzis. Permisiune insuficientă (${requiredPermission}).`,
+        error: `Acces interzis. Nu aveți permisiunea necesară (${requiredPermission}).`,
       });
   }
   next();

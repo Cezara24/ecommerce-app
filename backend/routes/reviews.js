@@ -1,30 +1,37 @@
 const express = require('express');
-const { Review, User, Product } = require('../models');
-const authMiddleware = require('../middlewares/auth');
+const sequelize = require('../db'); // Conexiunea la baza de date
+const { Sequelize } = require('sequelize');
+const Review = require('../models/Review')(sequelize, Sequelize.DataTypes);
+const Product = require('../models/Product')(sequelize, Sequelize.DataTypes);
+const User = require('../models/User')(sequelize, Sequelize.DataTypes);
+const { authMiddleware } = require('../middlewares/auth');
 const roleMiddleware = require('../middlewares/role');
 const permissionMiddleware = require('../middlewares/permission');
 
 const router = express.Router();
 
 // Obține toate recenziile pentru un produs
-router.get('/products/:id/reviews', async (req, res) => {
-  const productId = req.params.id;
-  try {
-    const reviews = await Review.findAll({
-      where: { productId },
-      include: [{ model: User, attributes: ['id', 'name'] }],
-    });
-    res.json(reviews);
-  } catch (error) {
-    res.status(500).json({ error: 'Eroare la obținerea recenziilor.', details: error.message });
+router.get(
+  '/products/:id/reviews',
+  [authMiddleware, roleMiddleware(['admin', 'merchant', 'customer']), permissionMiddleware('view_reviews')],
+  async (req, res) => {
+    const productId = req.params.id;
+    try {
+      const reviews = await Review.findAll({
+        where: { productId },
+        include: [{ model: User, attributes: ['id', 'name'] }],
+      });
+      res.json(reviews);
+    } catch (error) {
+      res.status(500).json({ error: 'Eroare la obținerea recenziilor.', details: error.message });
+    }
   }
-});
+);
 
 // Creează o recenzie nouă
 router.post(
   '/products/:id/reviews',
-  authMiddleware,
-  permissionMiddleware('create_review'),
+  [authMiddleware, roleMiddleware(['customer']), permissionMiddleware('create_review')],
   async (req, res) => {
     const productId = req.params.id;
     const { rating, comment } = req.body;
@@ -46,7 +53,7 @@ router.post(
 // Șterge o recenzie
 router.delete(
   '/products/:id/reviews/:reviewId',
-  authMiddleware,
+  [authMiddleware, permissionMiddleware('delete_review')],
   async (req, res) => {
     const { id: productId, reviewId } = req.params;
 
