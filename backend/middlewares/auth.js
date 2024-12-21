@@ -1,20 +1,9 @@
 const jwt = require('jsonwebtoken');
-const sequelize = require('../db');
-const { Sequelize } = require('sequelize');
+const { models } = require('../db');
 
-// Importă modelele
-const User = require('../models/User')(sequelize, Sequelize.DataTypes);
-const Role = require('../models/Role')(sequelize, Sequelize.DataTypes);
-const Permission = require('../models/Permission')(sequelize, Sequelize.DataTypes);
-
-// Definirea relațiilor
-Role.hasMany(User, { foreignKey: 'roleId' });
-User.belongsTo(Role, { foreignKey: 'roleId' });
-Role.belongsToMany(Permission, { through: 'RolePermissions', foreignKey: 'roleId' });
-Permission.belongsToMany(Role, { through: 'RolePermissions', foreignKey: 'permissionId' });
+const { AuthToken, User, Role, Permission } = models;
 
 module.exports = {
-  // Middleware pentru verificarea autentificării
   authMiddleware: async (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
@@ -22,6 +11,18 @@ module.exports = {
     }
 
     try {
+      // Verifică token-ul în baza de date
+      const authToken = await AuthToken.findOne({ where: { token } });
+      if (!authToken || authToken.isRevoked) {
+        return res.status(403).json({ error: 'Token invalid sau revocat.' });
+      }
+
+      // Verifică expirarea token-ului
+      if (new Date(authToken.expiresAt) < new Date()) {
+        return res.status(403).json({ error: 'Token expirat.' });
+      }
+
+      // Decodifică token-ul
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findByPk(decoded.id, {
         include: [{ model: Role, include: [Permission] }],
@@ -40,7 +41,7 @@ module.exports = {
       };
       next();
     } catch (error) {
-      res.status(403).json({ error: 'Token invalid sau expirat.' });
+      res.status(403).json({ error: 'Token invalid sau expirat.', details: error.message });
     }
   },
 

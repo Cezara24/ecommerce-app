@@ -1,21 +1,14 @@
 const express = require('express');
-const sequelize = require('../db');
-const { Sequelize } = require('sequelize');
-const Analytics = require('../models/Analytics')(sequelize, Sequelize.DataTypes);
-const User = require('../models/User')(sequelize, Sequelize.DataTypes);
-const Product = require('../models/Product')(sequelize, Sequelize.DataTypes);
+const { models } = require('../db'); // Importă modelele centralizate din db.js
+const { Analytics, User, Product } = models; // Extrage modelele necesare
 const { authMiddleware, permissionMiddleware } = require('../middlewares/auth');
 
 const router = express.Router();
 
-// Definirea relațiilor dacă nu sunt deja definite
-Analytics.belongsTo(User, { foreignKey: 'userId' });
-Analytics.belongsTo(Product, { foreignKey: 'productId' });
-
 // Obține toate datele de analiză (Admin)
 router.get(
   '/',
-  authMiddleware, // Asigură-te că aceasta este o funcție
+  authMiddleware, // Asigură-te că aceasta este o funcție middleware validă
   permissionMiddleware('view_analytics'),
   async (req, res) => {
     try {

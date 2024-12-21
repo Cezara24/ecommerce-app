@@ -1,11 +1,8 @@
 const express = require('express');
-const sequelize = require('../db'); // Conexiunea la baza de date
-const { Sequelize } = require('sequelize');
+const { models } = require('../db'); // Importă modelele centralizate din db.js
 
-// Import direct al modelelor
-const Wishlist = require('../models/Wishlist')(sequelize, Sequelize.DataTypes);
-const Product = require('../models/Product')(sequelize, Sequelize.DataTypes);
-const User = require('../models/User')(sequelize, Sequelize.DataTypes);
+// Modelele necesare
+const { Wishlist, Product } = models;
 
 const authMiddleware = require('../middlewares/auth').authMiddleware;
 const permissionMiddleware = require('../middlewares/permission');
@@ -16,9 +13,10 @@ const router = express.Router();
  * GET /wishlist
  * Obține toate produsele din lista de dorințe a utilizatorului curent
  */
-router.get('/', 
-    authMiddleware, 
-    permissionMiddleware('view_wishlist'), 
+router.get(
+    '/',
+    authMiddleware,
+    permissionMiddleware('view_wishlist'),
     async (req, res) => {
         try {
             const wishlist = await Wishlist.findAll({
@@ -36,9 +34,10 @@ router.get('/',
  * POST /wishlist
  * Adaugă un produs în lista de dorințe a utilizatorului curent
  */
-router.post('/', 
-    authMiddleware, 
-    permissionMiddleware('manage_wishlist'), 
+router.post(
+    '/',
+    authMiddleware,
+    permissionMiddleware('manage_wishlist'),
     async (req, res) => {
         const { productId } = req.body;
         try {
@@ -62,9 +61,10 @@ router.post('/',
  * DELETE /wishlist/:productId
  * Șterge un produs din lista de dorințe a utilizatorului curent
  */
-router.delete('/:productId', 
-    authMiddleware, 
-    permissionMiddleware('manage_wishlist'), 
+router.delete(
+    '/:productId',
+    authMiddleware,
+    permissionMiddleware('manage_wishlist'),
     async (req, res) => {
         const { productId } = req.params;
         try {

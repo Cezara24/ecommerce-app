@@ -1,9 +1,6 @@
 const express = require('express');
-const sequelize = require('../db'); // Conexiunea la baza de date
-const { Sequelize } = require('sequelize');
-const Review = require('../models/Review')(sequelize, Sequelize.DataTypes);
-const Product = require('../models/Product')(sequelize, Sequelize.DataTypes);
-const User = require('../models/User')(sequelize, Sequelize.DataTypes);
+const { models } = require('../db'); // Importă modelele din db.js
+const { Review, Product, User } = models; // Extrage modelele relevante
 const { authMiddleware } = require('../middlewares/auth');
 const roleMiddleware = require('../middlewares/role');
 const permissionMiddleware = require('../middlewares/permission');
@@ -19,7 +16,7 @@ router.get(
     try {
       const reviews = await Review.findAll({
         where: { productId },
-        include: [{ model: User, attributes: ['id', 'name'] }],
+        include: [{ model: User, attributes: ['id', 'name'] }], // Include datele utilizatorului
       });
       res.json(reviews);
     } catch (error) {

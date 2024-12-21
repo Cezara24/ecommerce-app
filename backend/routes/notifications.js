@@ -1,12 +1,13 @@
 const express = require('express');
-const sequelize = require('../db'); // Conexiunea la baza de date
-const { Sequelize } = require('sequelize');
-const Notification = require('../models/Notification')(sequelize, Sequelize.DataTypes); // Modelul Notification
+const { models } = require('../db'); // Importă modelele din db.js
 const { authMiddleware } = require('../middlewares/auth');
 const roleMiddleware = require('../middlewares/role');
 const permissionMiddleware = require('../middlewares/permission');
 
 const router = express.Router();
+
+// Destructurare pentru modelul Notification
+const { Notification } = models;
 
 // Obține toate notificările unui utilizator
 router.get(

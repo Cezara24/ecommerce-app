@@ -1,17 +1,10 @@
 const express = require('express');
-const sequelize = require('../db');
-const { Sequelize } = require('sequelize');
-const Cart = require('../models/Cart')(sequelize, Sequelize.DataTypes);
-const CartItem = require('../models/CartItem')(sequelize, Sequelize.DataTypes);
-const Product = require('../models/Product')(sequelize, Sequelize.DataTypes);
+const { models } = require('../db'); // Importă modelele centralizate din db.js
 const { authMiddleware, permissionMiddleware } = require('../middlewares/auth');
 
-const router = express.Router();
+const { Cart, CartItem, Product } = models; // Extrage modelele necesare
 
-// Definirea relațiilor
-Cart.hasMany(CartItem, { foreignKey: 'cartId' });
-CartItem.belongsTo(Cart, { foreignKey: 'cartId' });
-CartItem.belongsTo(Product, { foreignKey: 'productId' });
+const router = express.Router();
 
 // Rute
 
@@ -19,13 +12,15 @@ CartItem.belongsTo(Product, { foreignKey: 'productId' });
 router.get('/users/:id/cart', authMiddleware, permissionMiddleware('view_cart'), async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Permisiuni: utilizatorul poate vedea doar propriul coș, cu excepția adminilor
     if (req.user.id !== parseInt(id) && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Acces interzis' });
     }
 
     const cart = await Cart.findOne({
       where: { userId: id },
-      include: { model: CartItem, include: Product },
+      include: { model: CartItem, include: Product }, // Include produsele din coș
     });
 
     if (!cart) return res.status(404).json({ error: 'Coșul nu a fost găsit' });
@@ -42,22 +37,27 @@ router.post('/users/:id/cart/items', authMiddleware, permissionMiddleware('manag
     const { id } = req.params;
     const { productId, quantity } = req.body;
 
+    // Permisiuni: utilizatorul poate gestiona doar propriul coș
     if (req.user.id !== parseInt(id)) {
       return res.status(403).json({ error: 'Acces interzis' });
     }
 
+    // Găsește sau creează coșul utilizatorului
     const [cart] = await Cart.findOrCreate({ where: { userId: id } });
+
+    // Găsește sau creează un articol în coș
     const [cartItem] = await CartItem.findOrCreate({
       where: { cartId: cart.id, productId },
       defaults: { quantity },
     });
 
+    // Dacă articolul există deja, actualizează cantitatea
     if (!cartItem.isNewRecord) {
       cartItem.quantity += quantity;
       await cartItem.save();
     }
 
-    res.status(201).json({ message: 'Produs adăugat în coș' });
+    res.status(201).json({ message: 'Produs adăugat în coș', cartItem });
   } catch (error) {
     res.status(500).json({ error: 'Eroare la adăugarea produsului în coș', details: error.message });
   }
@@ -68,13 +68,16 @@ router.delete('/users/:id/cart', authMiddleware, permissionMiddleware('delete_ca
   try {
     const { id } = req.params;
 
+    // Permisiuni: utilizatorul poate șterge doar propriul coș sau adminii
     if (req.user.id !== parseInt(id) && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Acces interzis' });
     }
 
+    // Găsește coșul utilizatorului
     const cart = await Cart.findOne({ where: { userId: id } });
     if (!cart) return res.status(404).json({ error: 'Coșul nu a fost găsit' });
 
+    // Șterge articolele din coș și coșul
     await CartItem.destroy({ where: { cartId: cart.id } });
     await cart.destroy();
 

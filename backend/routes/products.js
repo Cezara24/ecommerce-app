@@ -1,18 +1,9 @@
 const express = require('express');
-const sequelize = require('../db');
-const { Sequelize } = require('sequelize');
-const Product = require('../models/Product')(sequelize, Sequelize.DataTypes);
-const Category = require('../models/Category')(sequelize, Sequelize.DataTypes);
-const ProductImage = require('../models/ProductImage')(sequelize, Sequelize.DataTypes);
-const Review = require('../models/Review')(sequelize, Sequelize.DataTypes);
+const { models } = require('../db'); // Importă modelele centralizate din db.js
+const { Product, Category, ProductImage, Review } = models; // Extrage modelele necesare
 const { authMiddleware, permissionMiddleware } = require('../middlewares/auth');
 
 const router = express.Router();
-
-// Definirea relațiilor
-Product.belongsTo(Category, { foreignKey: 'categoryId' });
-Product.hasMany(ProductImage, { foreignKey: 'productId' });
-Product.hasMany(Review, { foreignKey: 'productId' });
 
 // Rute
 

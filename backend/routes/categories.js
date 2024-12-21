@@ -1,7 +1,6 @@
 const express = require('express');
-const sequelize = require('../db'); // Importă conexiunea Sequelize
-const { Sequelize } = require('sequelize');
-const Category = require('../models/Category')(sequelize, Sequelize.DataTypes); // Importă modelul direct
+const { models } = require('../db'); // Importă modelele din db.js
+const { Category } = models; // Utilizează modelul Category din contextul global
 const { authMiddleware, permissionMiddleware } = require('../middlewares/auth');
 const roleMiddleware = require('../middlewares/role');
 

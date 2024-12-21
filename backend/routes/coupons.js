@@ -1,14 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { DataTypes } = require('sequelize');
-const sequelize = require('../db'); // Importă instanța Sequelize
+const { models, sequelize } = require('../db'); // Importă modelele și instanța Sequelize centralizată
 
-// Importă modelele
-const Role = require('../models/Role')(sequelize, DataTypes);
-const Permission = require('../models/Permission')(sequelize, DataTypes);
-const RolePermission = require('../models/RolePermission')(sequelize, DataTypes);
-const User = require('../models/User')(sequelize, DataTypes);
-const UserAddress = require('../models/UserAddress')(sequelize, DataTypes);
+const { Role, Permission, RolePermission } = models; // Extrage modelele necesare
 
 // Exemplu de endpoint GET pentru a verifica funcționalitatea
 router.get('/', async (req, res) => {
@@ -26,11 +20,14 @@ router.post('/seed', async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     // 1. Crearea rolurilor
-    const roles = await Role.bulkCreate([
-      { name: 'admin', description: 'Administrator with full access' },
-      { name: 'customer', description: 'Regular customer' },
-      { name: 'merchant', description: 'Merchant who sells products' },
-    ], { transaction });
+    const roles = await Role.bulkCreate(
+      [
+        { name: 'admin', description: 'Administrator with full access' },
+        { name: 'customer', description: 'Regular customer' },
+        { name: 'merchant', description: 'Merchant who sells products' },
+      ],
+      { transaction }
+    );
 
     // 2. Crearea permisiunilor
     const permissionsList = [
@@ -45,16 +42,16 @@ router.post('/seed', async (req, res) => {
       'view_roles', 'create_role', 'update_role', 'delete_role',
       'view_permissions', 'create_permission', 'assign_permission', 'revoke_permission',
       'view_users', 'create_user', 'delete_user', 'view_addresses',
-      'view_wishlist', 'manage_wishlist'
+      'view_wishlist', 'manage_wishlist',
     ];
     const permissions = await Permission.bulkCreate(
-      permissionsList.map(name => ({ name, description: `Permission for ${name}` })),
+      permissionsList.map((name) => ({ name, description: `Permission for ${name}` })),
       { transaction }
     );
 
     // 3. Maparea permisiunilor pentru fiecare rol
-    const adminRole = roles.find(r => r.name === 'admin');
-    const rolePermissions = permissions.map(p => ({
+    const adminRole = roles.find((r) => r.name === 'admin');
+    const rolePermissions = permissions.map((p) => ({
       roleId: adminRole.id,
       permissionId: p.id,
     }));

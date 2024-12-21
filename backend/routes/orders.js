@@ -1,15 +1,13 @@
 const express = require('express');
-const sequelize = require('../db'); // Conexiunea la baza de date
-const { Sequelize } = require('sequelize');
-const Order = require('../models/Order')(sequelize, Sequelize.DataTypes);
-const OrderItem = require('../models/OrderItem')(sequelize, Sequelize.DataTypes);
-const PaymentTransaction = require('../models/PaymentTransaction')(sequelize, Sequelize.DataTypes);
-const Product = require('../models/Product')(sequelize, Sequelize.DataTypes);
+const { models } = require('../db'); // Importă modelele centralizate
 const { authMiddleware } = require('../middlewares/auth'); // Asigură-te că sunt importate corect
 const roleMiddleware = require('../middlewares/role');
 const permissionMiddleware = require('../middlewares/permission');
 
 const router = express.Router();
+
+// Destructurare pentru a accesa modelele necesare
+const { Order, OrderItem, PaymentTransaction, Product } = models;
 
 // Obține toate comenzile
 router.get(

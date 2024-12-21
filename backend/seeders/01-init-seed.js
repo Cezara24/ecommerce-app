@@ -5,21 +5,16 @@ console.log('DB_NAME:', process.env.DB_NAME);
 console.log('DATABASE_URL:', process.env.DATABASE_URL);
 
 const bcrypt = require('bcrypt');
-const sequelize = require('../db'); // Importă conexiunea Sequelize
-const { DataTypes } = require('sequelize');
 const moment = require('moment');
+const { sequelize, models } = require('../db'); // Importă conexiunea și modelele centralizate
 
-// Inițializează modelele
-const Role = require('../models/Role')(sequelize, DataTypes);
-const Permission = require('../models/Permission')(sequelize, DataTypes);
-const RolePermission = require('../models/RolePermission')(sequelize, DataTypes);
-const User = require('../models/User')(sequelize, DataTypes);
-const UserAddress = require('../models/UserAddress')(sequelize, DataTypes);
+// Modelele
+const { Role, Permission, RolePermission, User, UserAddress } = models;
 
 async function seedDatabase() {
     const transaction = await sequelize.transaction(); // Inițializează o tranzacție
     try {
-        // Ştergerea tuturor datelor din tabele
+        // Ștergerea tuturor datelor din tabele
         await sequelize.query('TRUNCATE "RolePermissions" CASCADE;', { transaction });
         await sequelize.query('TRUNCATE "Permissions" CASCADE;', { transaction });
         await sequelize.query('TRUNCATE "Roles" CASCADE;', { transaction });

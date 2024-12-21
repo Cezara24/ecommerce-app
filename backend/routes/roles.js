@@ -1,9 +1,6 @@
 const express = require('express');
-const sequelize = require('../db'); // Conexiunea la baza de date
-const { Sequelize } = require('sequelize');
-const Role = require('../models/Role')(sequelize, Sequelize.DataTypes);
-const Permission = require('../models/Permission')(sequelize, Sequelize.DataTypes);
-const RolePermission = require('../models/RolePermission')(sequelize, Sequelize.DataTypes);
+const { models } = require('../db'); // Importă modelele centralizate din db.js
+const { Role, Permission, RolePermission } = models; // Extrage modelele necesare
 const { authMiddleware } = require('../middlewares/auth');
 const roleMiddleware = require('../middlewares/role');
 const permissionMiddleware = require('../middlewares/permission');
