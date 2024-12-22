@@ -1,4 +1,4 @@
-module.exports = (requiredPermission) => (req, res, next) => {
+const permissionMiddleware = (requiredPermission) => (req, res, next) => {
   if (!req.user || !req.user.permissions.includes(requiredPermission)) {
     return res
       .status(403)
@@ -7,4 +7,8 @@ module.exports = (requiredPermission) => (req, res, next) => {
       });
   }
   next();
+};
+
+module.exports = {
+  permissionMiddleware,
 };

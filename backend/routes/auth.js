@@ -2,12 +2,8 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { models } = require("../db");
-const { User, Role, Permission } = models;
-const {
-  authMiddleware,
-  roleMiddleware,
-  permissionMiddleware,
-} = require("../middlewares/auth");
+const { User, Role } = models;
+const { authMiddleware } = require("../middlewares/auth");
 const router = express.Router();
 
 // New user registration
@@ -107,9 +103,7 @@ router.post("/logout", authMiddleware, async (req, res) => {
     res.json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("Logout error:", error);
-    res
-      .status(500)
-      .json({ error: "Logout error", details: error.message });
+    res.status(500).json({ error: "Logout error", details: error.message });
   }
 });
 
@@ -141,11 +135,11 @@ router.post("/assign-role/:id", authMiddleware, async (req, res) => {
         (req.user.role === "merchant" && roleId === 2)
       ) {
         await user.update({ roleId });
-        return res.json({ 
+        return res.json({
           message: "Role successfully assigned!",
           user: {
             roleId: roleId,
-          }
+          },
         });
       }
       return res.status(403).json({

@@ -1,10 +1,10 @@
 const express = require('express');
-const { models } = require('../db'); // Importă modelele centralizate
-const { User, UserAddress, Role, Permission } = models; // Extrage modelele necesare
-const authMiddleware = require('../middlewares/auth').authMiddleware;
-const roleMiddleware = require('../middlewares/role');
-const permissionMiddleware = require('../middlewares/permission');
 const bcrypt = require('bcrypt');
+const { models } = require('../db');
+const { User, UserAddress, Role, Permission } = models;
+const { authMiddleware } = require("../middlewares/auth");
+const { roleMiddleware } = require("../middlewares/role");
+const { permissionMiddleware } = require("../middlewares/permission");
 
 const router = express.Router();
 
