@@ -5,6 +5,7 @@ const { models } = require("../db");
 const { User, Role } = models;
 const { authMiddleware } = require("../middlewares/auth");
 const router = express.Router();
+const { Op } = require("sequelize");
 
 // New user registration
 router.post("/register", async (req, res) => {
@@ -111,42 +112,43 @@ router.post("/logout", authMiddleware, async (req, res) => {
 router.post("/assign-role/:id", authMiddleware, async (req, res) => {
   const { roleId } = req.body;
   const targetUserId = parseInt(req.params.id, 10);
-
   try {
+    const roleExists = await Role.findByPk(roleId);
+    if (!roleExists) {
+      return res.status(404).json({ error: "The specified role does not exist." });
+    }
     const user = await User.findByPk(targetUserId);
     if (!user) {
       return res.status(404).json({ error: "User does not exist." });
     }
-
+    const isSelf = req.user.id === targetUserId;
+    const isAdmin = req.user.roleId === 1;
     if (user.roleId === roleId) {
       return res.status(200).json({
         message: "No changes made. User already has this role.",
       });
     }
-
-    if (req.user.role === "admin") {
+    if (user.roleId === 1 && roleId !== 1) {
+      const otherAdmins = await User.count({ where: { roleId: 1, id: { [Op.ne]: user.id } } });
+      if (otherAdmins === 0) {
+        return res.status(403).json({
+          error: "You cannot remove the last administrator. At least one admin must remain.",
+        });
+      }
+    }
+    if (isAdmin) {
       await user.update({ roleId });
       return res.json({ message: "Role successfully assigned!" });
     }
-
-    if (req.user.id === targetUserId) {
-      if (
-        (req.user.role === "customer" && roleId === 3) ||
-        (req.user.role === "merchant" && roleId === 2)
-      ) {
+    if (isSelf) {
+        if (roleId === 1) {
+          return res.status(403).json({
+            error: "You do not have permission to assign this role.",
+          });
+        }
         await user.update({ roleId });
-        return res.json({
-          message: "Role successfully assigned!",
-          user: {
-            roleId: roleId,
-          },
-        });
-      }
-      return res.status(403).json({
-        error: "You do not have permission to set this role.",
-      });
+        return res.json({ message: "Role successfully assigned!" });
     }
-
     return res.status(403).json({
       error: "You do not have permission to modify this user.",
     });

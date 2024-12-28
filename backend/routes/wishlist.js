@@ -1,11 +1,8 @@
 const express = require('express');
-const { models } = require('../db'); // Importă modelele centralizate din db.js
-
-// Modelele necesare
+const { models } = require('../db');
 const { Wishlist, Product } = models;
-
-const authMiddleware = require('../middlewares/auth').authMiddleware;
-const permissionMiddleware = require('../middlewares/permission');
+const { authMiddleware } = require("../middlewares/auth");
+const { permissionMiddleware } = require("../middlewares/permission");
 
 const router = express.Router();
 

@@ -1,8 +1,9 @@
 const express = require('express');
-const { models } = require('../db'); // Importă modelele din db.js
-const { Category } = models; // Utilizează modelul Category din contextul global
-const { authMiddleware, permissionMiddleware } = require('../middlewares/auth');
-const roleMiddleware = require('../middlewares/role');
+const { models } = require('../db');
+const { Category } = models;
+const { authMiddleware } = require("../middlewares/auth");
+const { roleMiddleware } = require("../middlewares/role");
+const { permissionMiddleware } = require("../middlewares/permission");
 
 const router = express.Router();
 

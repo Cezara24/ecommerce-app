@@ -1,8 +1,8 @@
 const express = require('express');
-const { models } = require('../db'); // Importă modelele din db.js
-const { authMiddleware } = require('../middlewares/auth');
-const roleMiddleware = require('../middlewares/role');
-const permissionMiddleware = require('../middlewares/permission');
+const { models } = require('../db');
+const { authMiddleware } = require("../middlewares/auth");
+const { roleMiddleware } = require("../middlewares/role");
+const { permissionMiddleware } = require("../middlewares/permission");
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 const express = require('express');
-const { models } = require('../db'); // Importă modelele centralizate
-const { authMiddleware } = require('../middlewares/auth'); // Import corect pentru funcții
-const roleMiddleware = require('../middlewares/role');
+const { models } = require('../db');
+const { authMiddleware } = require("../middlewares/auth");
+const { roleMiddleware } = require("../middlewares/role");
 
 const { Permission, RolePermission } = models; // Extrage modelele necesare
 
